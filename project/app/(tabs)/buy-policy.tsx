@@ -137,55 +137,47 @@ export default function BuyPolicy() {
     }
   };
 
-  const handlePayment = async () => {
-    if (!user) return;
+ const handlePayment = async () => {
+  if (!user) return;
 
-    setLoading(true);
-    try {
-      // In a real app, you would integrate with UPI payment gateway here
-      // For now, we'll simulate successful payment and create the policy
+  setLoading(true);
+  try {
+    const startDate = new Date();
+    const endDate = new Date();
+    endDate.setFullYear(endDate.getFullYear() + 1);
 
-      const startDate = new Date();
-      const endDate = new Date();
-      endDate.setFullYear(endDate.getFullYear() + 1); // 1 year policy
+    // 👇 Create payload
+    const payload = {
+      user_id: user.id,
+      state: policyData.state,
+      district: policyData.district,
+      crop: policyData.crop,
+      premium_amount: policyData.premium,
+      coverage_amount: policyData.coverage,
+      start_date: startDate.toISOString().split('T')[0],
+      end_date: endDate.toISOString().split('T')[0],
+      status: 'active',
+    };
 
-      const { error } = await supabase.from('policies').insert({
-        user_id: user.id,
-        state: policyData.state,
-        district: policyData.district,
-        crop: policyData.crop,
-        premium_amount: policyData.premium,
-        coverage_amount: policyData.coverage,
-        start_date: startDate.toISOString().split('T')[0],
-        end_date: endDate.toISOString().split('T')[0],
-        status: 'active',
-      });
+    const res = await fetch('http://localhost:5000/api/policies/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
 
-      if (error) {
-        Alert.alert(t('error'), 'Failed to create policy. Please try again.');
-      } else {
-        Alert.alert(t('success'), 'Policy created successfully!', [
-          { 
-            text: 'OK', 
-            onPress: () => {
-              setCurrentStep(1);
-              setPolicyData({
-                state: '',
-                district: '',
-                crop: '',
-                premium: 0,
-                coverage: 0,
-              });
-            }
-          }
-        ]);
-      }
-    } catch (error) {
-      Alert.alert(t('error'), 'Connection failed. Please check your internet connection.');
-    } finally {
-      setLoading(false);
+    const json = await res.json();
+
+    if (!res.ok) {
+      Alert.alert('Error', json.error || 'Something went wrong.');
+    } else {
+      Alert.alert('Success', 'Policy created successfully!');
     }
-  };
+  } catch (err) {
+    Alert.alert('Error', 'Could not connect. Try again.');
+  } finally {
+    setLoading(false);
+  }
+};
 
   const renderStepIndicator = () => (
     <View style={styles.stepIndicator}>
